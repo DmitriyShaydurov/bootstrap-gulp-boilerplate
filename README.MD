@@ -18,4 +18,4 @@ npm install
 gulp
 ```
 
-Files are compiled into /@source
+Files are compiled into /dist
