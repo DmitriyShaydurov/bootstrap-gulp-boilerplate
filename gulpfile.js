@@ -14,7 +14,7 @@ const path = {
     },
     src : {
         html : source_folder + '*.html',
-        css : source_folder + 'scss/style.scss',
+        css : [source_folder + 'scss/*.scss', source_folder + 'scss/inline.scss'],
         js : source_folder + 'js/main.js',
         img : source_folder + 'images/**/*.{jpg,png,svg,gif,ico,webp}'
     },
@@ -42,6 +42,7 @@ const del = require('del');
 const fileinclude = require('gulp-file-include');
 const autoprefixer = require('gulp-autoprefixer');
 const htmlmin = require('gulp-htmlmin');
+const inlinesource = require('gulp-inline-source');
 
  
 
@@ -54,6 +55,7 @@ const strip = require('gulp-strip-comments');
 const sass = require('gulp-sass');
 const groupCssMediaQueries = require('gulp-group-css-media-queries');
 const cleanCss = require('gulp-clean-css');
+const uncss = require('gulp-uncss');
 
 // images
 const imagemin = require('gulp-imagemin');
@@ -86,6 +88,10 @@ function html() {
         .pipe(webpHtml())
         .pipe(htmlmin({ collapseWhitespace: true, removeComments: true}))
         .pipe(dest(path.build.html))
+
+        // .pipe(src(path.build.html))
+        // .pipe(inlinesource(path.watch.html))
+        // .pipe(dest(path.build.html))
         .pipe(browserSync.reload({stream: true}))
 }
 
@@ -118,9 +124,12 @@ function css() {
                 outputStyle: "expended"
             })
         )
+        // .pipe(uncss({
+        //     html: [path.src.html]
+        // }))
         .pipe(
             autoprefixer({
-                overrideBrowserslist: ['last 10 versions'], 
+                overrideBrowserslist: ['last 10 versions'],
                 grid: true 
             })
         )
@@ -128,6 +137,12 @@ function css() {
         .pipe(groupCssMediaQueries())
         .pipe(cleanCss())
         .pipe(dest(path.build.css))
+
+        // .pipe(src(path.build.css + '*.css'))
+        // .pipe(uncss({
+        //     html: [path.build.html + '*.html']
+        // }))
+        // .pipe(dest(path.build.css))
         .pipe(browserSync.stream()) // trigger Browsersync
 }
 
@@ -137,16 +152,33 @@ function clean() {
 }
 
 function watchFiles() {
+    browser_sync();
     watch(path.watch.html, html);
-    watch(path.watch.js, scripts)
-    watch(path.watch.css, css)
-    watch(path.watch.img, images)
+    watch(path.watch.js, scripts);
+    watch(path.watch.css, css);
+    watch(path.watch.img, images);
+}
+
+function inlineCss() {
+    return src(project_folder + '*.html')
+        .pipe(inlinesource())
+        .pipe(dest(path.build.html))
+}
+
+function removeUnusedCss() {
+    return src(path.build.css + '*.css')
+        .pipe(uncss({
+            html: [path.build.html + '*.html']
+        }))
+        .pipe(dest(path.build.css))
 }
 
 
-let build = series(clean, parallel(css, html, scripts, images));
+let build = series(clean, css, html, parallel(scripts, images));
+let production = series(removeUnusedCss, inlineCss);
 
 
 exports.build = build;
+exports.production = production;
 
-exports.default = parallel(build, browser_sync, watchFiles);
+exports.default = series( build, watchFiles);
