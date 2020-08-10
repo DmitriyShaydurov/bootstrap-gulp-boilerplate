@@ -124,9 +124,6 @@ function css() {
                 outputStyle: "expended"
             })
         )
-        // .pipe(uncss({
-        //     html: [path.src.html]
-        // }))
         .pipe(
             autoprefixer({
                 overrideBrowserslist: ['last 10 versions'],
@@ -137,12 +134,6 @@ function css() {
         .pipe(groupCssMediaQueries())
         .pipe(cleanCss())
         .pipe(dest(path.build.css))
-
-        // .pipe(src(path.build.css + '*.css'))
-        // .pipe(uncss({
-        //     html: [path.build.html + '*.html']
-        // }))
-        // .pipe(dest(path.build.css))
         .pipe(browserSync.stream()) // trigger Browsersync
 }
 
@@ -174,7 +165,7 @@ function removeUnusedCss() {
 }
 
 
-let build = series(clean, css, html, parallel(scripts, images));
+let build = series(clean, parallel(css, html, scripts, images));
 let production = series(removeUnusedCss, inlineCss);
 
 
